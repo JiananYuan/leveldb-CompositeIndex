@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   options.secondary_key = "State";
 
   std::cout << "Trying to create database\n";
-  if (!leveldb::DB::Open(options, "/tmp/eager", &db).ok()) return 1;
+  if (!leveldb::DB::Open(options, "/tmp/composite", &db).ok()) return 1;
   std::cout << "Created databases\n";
 
 
