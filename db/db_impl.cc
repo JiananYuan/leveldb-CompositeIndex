@@ -1502,57 +1502,56 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& skey, std::vector<Ra
 				 if(seckey.compare(skey)==0)
 				 {
 
-					struct RangeKeyValuePair newVal;;
+            struct RangeKeyValuePair newVal;;
 
-					pkeys= pkey.ToString();
-					newVal.key = pkeys;
-					newVal.sequence_number = seqN;
-					int vsize = value_list->size();
-					if(vsize>=topk && seqN<value_list->front().sequence_number)
-					 						continue;
+            pkeys= pkey.ToString();
+            newVal.key = pkeys;
+            newVal.sequence_number = seqN;
+            int vsize = value_list->size();
+            if(vsize>=topk && seqN<value_list->front().sequence_number)
+              continue;
 
+            if(resultSetofKeysFound.find(pkeys)==resultSetofKeysFound.end())
+            {
+              //std::cout<<pkey.ToString()<<"\n";
 
+              std::string pValue;
+              //continue;
+              Status db_status = this->Get(options, pkey, &pValue);
+              newVal.value = pValue;
 
-					if(resultSetofKeysFound.find(pkeys)==resultSetofKeysFound.end())
-					{
-						//std::cout<<pkey.ToString()<<"\n";
+              if (db_status.ok()) {
+                rapidjson::Document val;
+                val.Parse<0>(pValue.c_str());
 
-						 std::string pValue;
-						 //continue;
-						 Status db_status = this->Get(options, pkey, &pValue);
+                // check for updates
+                if (skey.ToString() == GetAttr(val, this->options_.secondary_key.c_str()))
+                {
+                  if(vsize>=topk)
+                    newVal.Pop(value_list);
+                  newVal.Push(value_list, newVal);
+                  resultSetofKeysFound.insert(pkeys);
+                  //s= Slice::OK();
+                  //std::cout<<"inserted"<<std::endl;
 
-						 if (db_status.ok()) {
-							rapidjson::Document val;
-							val.Parse<0>(pValue.c_str());
-
-							// check for updates
-							if (skey.ToString() == GetAttr(val, this->options_.secondary_key.c_str()))
-							{
-								if(vsize>=topk)
-									newVal.Pop(value_list);
-								newVal.Push(value_list, newVal);
-								resultSetofKeysFound.insert(pkeys);
-								//s= Slice::OK();
-								//std::cout<<"inserted"<<std::endl;
-
-							}
-							// trigger read repair as this pkey has a updated skey
-							else
-							{
-							  //updated = true;
-								WriteOptions wopt;
-								this->sdb->Delete(wopt, key);
-								//std::cout<<"updated"<<std::endl;
-							}
-						 }
-						 else if(db_status.IsNotFound())
-						 {
-							 //read repair, delete entry pkey from sec table
-							 WriteOptions wopt;
-							 this->sdb->Delete(wopt, key);
-							 //std::cout<<"not found"<<std::endl;
-						 }
-					}
+                }
+                // trigger read repair as this pkey has a updated skey
+                else
+                {
+                  //updated = true;
+                  WriteOptions wopt;
+                  this->sdb->Delete(wopt, key);
+                  //std::cout<<"updated"<<std::endl;
+                }
+              }
+              else if(db_status.IsNotFound())
+              {
+                //read repair, delete entry pkey from sec table
+                WriteOptions wopt;
+                this->sdb->Delete(wopt, key);
+                //std::cout<<"not found"<<std::endl;
+              }
+            }
 				 }
 			}
 			else

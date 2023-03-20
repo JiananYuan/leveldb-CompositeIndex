@@ -7,3 +7,14 @@ build_config.mk
 *_test
 db_bench
 leveldbutil
+.settings
+build/*
+!build/build.sh
+!build/exp.sh
+.idea
+.vscode
+cmake-build-debug
+cmake-build-release
+*.csv
+.cproject
+.project

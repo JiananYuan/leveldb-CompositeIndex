@@ -95,7 +95,7 @@
         <in>issue200_test.cc</in>
       </df>
       <df name="main">
-        <in>main2.cc</in>
+        <in>main.cc</in>
       </df>
       <df name="port">
         <df name="win">
